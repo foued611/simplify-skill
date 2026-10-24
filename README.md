@@ -26,6 +26,8 @@ Danach per „mach einen simplify-Lauf über den Diff" / `/simplify` auslösen. 
 
 Drei Fälle unter `evals/`, jeder mit `prompt.md` (User-Anfrage), `case.yaml` (Erwartung), `graders/` (Assertionen) und `fixture.bundle` (Git-Bundle mit `main` + Feature-Branch).
 
+**Abgrenzung:** Die Skill selbst (`SKILL.md`) ist feature-agnostisch — kein Domänen-Inhalt. Alles unter `evals/` sind synthetische Test-Fixtures (erfundene Beispiel-Projekte wie Unit-Test-Daten), die ausschließlich prüfen, ob die Skill ihre Regeln einhält.
+
 Fixture materialisieren und Tests prüfen:
 
 ```bash
