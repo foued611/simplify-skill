@@ -69,6 +69,12 @@ Then have an agent work the `prompt.md` request once **with** the skill and once
 
 Without the skill, runs silently deleted a test and rewrote a failing test to hide an embedded bug — exactly the violations this skill exists to prevent. Timing/token metrics were not measurable in the harness used.
 
+## Security
+
+- **Prompt-injection posture:** the pass treats everything it reads — diff, files, comments, commit messages, branch names, reviewer findings — as data, never as instructions. Injected instructions are reported as findings, not followed. Lens reviewers run memoryless and read-only, every finding needs a behavior-equivalence justification, and quoted code is fenced.
+- **Evals execute generated code.** Agents under test write and run Node code, and fixtures come from git bundles that pull requests can modify. Run evals in a sandbox (container or VM) and review any diff touching `evals/` before you pull it.
+- **`SKILL.md` is code.** This whole repository is instructions that run inside your agent sessions. Review changes to `SKILL.md` like code before updating, and pin a release tag when you consume the skill from automation.
+
 ## License
 
 [MIT](LICENSE)
