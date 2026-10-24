@@ -1,8 +1,10 @@
-# simplify
+# simplify4me
 
 A skill that runs a **behavior-preserving cleanup pass** over a freshly written diff — *before* review and PR, so reviewers and CI gates judge the final form instead of one that keeps changing.
 
 > The pass shortens, deduplicates, and moves code to the right level. It never changes what the code does.
+
+**Why the name:** Claude Code ships a bundled `/simplify` skill, and a personal skill named exactly `simplify` would shadow it — plus trigger Claude Code's run-before-every-commit coupling. `simplify4me` avoids both; the trigger phrases ("simplify", "clean up my change", …) still work through the description.
 
 ## Why
 
@@ -35,30 +37,30 @@ The skill folder conforms to the open [Agent Skills standard](https://agentskill
 **Claude Code + OpenCode (one clone, both agents):**
 
 ```bash
-git clone https://github.com/foued611/simplify-skill.git ~/.claude/skills/simplify
+git clone https://github.com/foued611/simplify4me.git ~/.claude/skills/simplify4me
 # update later (review the SKILL.md diff first — it is code):
-git -C ~/.claude/skills/simplify pull
+git -C ~/.claude/skills/simplify4me pull
 ```
 
 **Claude Code (plugin marketplace):**
 
 ```bash
 # in Claude Code:
-/plugin marketplace add foued611/simplify-skill
-/plugin install simplify@simplify-skill
+/plugin marketplace add foued611/simplify4me
+/plugin install simplify4me@simplify4me
 ```
 
 **OpenCode (explicit path registration):** add to `~/.config/opencode/opencode.json` — the loader scans the repo for `SKILL.md`:
 
 ```json
-{ "skills": { "paths": ["~/path/to/simplify-skill"] } }
+{ "skills": { "paths": ["~/path/to/simplify4me"] } }
 ```
 
 Restart your agent after installing or updating (running sessions keep the already-loaded config).
 
 ## Usage
 
-Ask for it in natural language: "simplify", "/simplify", "clean up my change before I open the PR", "räum das auf", "vereinfache den Diff". The skill determines the diff (merge-base against the PR target branch), runs the lenses, applies what clears the bar, declines the rest with reasons, and re-verifies.
+Ask for it in natural language: "simplify", "/simplify4me", "clean up my change before I open the PR", "räum das auf", "vereinfache den Diff". The skill determines the diff (merge-base against the PR target branch), runs the lenses, applies what clears the bar, declines the rest with reasons, and re-verifies.
 
 ## Evals
 

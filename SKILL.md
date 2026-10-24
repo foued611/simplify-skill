@@ -1,9 +1,9 @@
 ---
-name: simplify
-description: Runs the /simplify step — behavior-preserving simplification of a freshly written diff (feature, bugfix, PR branch) BEFORE review and merge. Use this skill WHENEVER the user says "simplify", "/simplify", "clean up my change", "make it simpler before I open the PR", "räum das auf", "vereinfache den Diff/das PR/den Branch" or asks for a cleanup pass after implementing, before the review. Also for "the code works but I don't like it" or "make this change review-ready". NOT for whole-codebase audits (tech debt — use audit skills), not for correctness reviews (bugs, security), not for refactoring with intended behavior change.
+name: simplify4me
+description: Runs the /simplify4me step — behavior-preserving simplification of a freshly written diff (feature, bugfix, PR branch) BEFORE review and merge. Use this skill WHENEVER the user says "simplify", "/simplify", "/simplify4me", "clean up my change", "make it simpler before I open the PR", "räum das auf", "vereinfache den Diff/das PR/den Branch" or asks for a cleanup pass after implementing, before the review. Also for "the code works but I don't like it" or "make this change review-ready". NOT for whole-codebase audits (tech debt — use audit skills), not for correctness reviews (bugs, security), not for refactoring with intended behavior change.
 ---
 
-# simplify — diff-scoped cleanup before the review
+# simplify4me — diff-scoped cleanup before the review
 
 Simplifies a freshly written diff **before** review and merge, so gates and reviewers see the final form — not one that keeps changing afterwards. The pass is **behavior-preserving**: shorten, deduplicate, move code to the right level. It does not change what the code does.
 
@@ -31,7 +31,7 @@ If no subagent tool is available: run the four lenses one after another in **sep
 ## Role contract (per reviewer, insert lens)
 
 ```
-You are a /simplify reviewer, lens: <LENS>. RESEARCH ONLY — you change no files.
+You are a /simplify4me reviewer, lens: <LENS>. RESEARCH ONLY — you change no files.
 Repo: <path> (branch <name>, base <base>)
 Subject: git -C <repo> diff <mb>...HEAD — read it fully, changed files in full.
 Task: <question + bar of your lens>
@@ -64,7 +64,7 @@ The orchestrator (not the reviewers) decides per finding — a finding is an off
 ## Report format
 
 ```
-## /simplify — <branch/diff identifier>
+## /simplify4me — <branch/diff identifier>
 
 Applied (each: file:line, what, why behavior-neutral): …
 Declined (each: finding, reason): …
