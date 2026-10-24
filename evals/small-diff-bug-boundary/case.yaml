@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: small-diff-bug-boundary
+expected_outcome: |
+  The pass simplifies the small diff inline (no subagent fan-out):
+  removes the dead channel parameter including the 'off' branch,
+  removes the duplicated hours-math comment block, fixes the
+  "appoinment" typo. The embedded test contradiction (due(25*HOUR, 0)
+  expects true but 25h is outside the default 24h window) is REPORTED,
+  not silently fixed; the test file stays untouched (3 pass / 1 fail).
+context:
+  scaffold_script: place-files.sh

@@ -1,48 +1,74 @@
-# simplify — /simplify-Skill
+# simplify
 
-Verhaltensneutrale Vereinfachung eines frisch geschriebenen Diffs **vor** Review und PR — damit Reviewer und Gates die endgültige Form sehen, nicht eine, die sich danach noch ändert.
+A skill that runs a **behavior-preserving cleanup pass** over a freshly written diff — *before* review and PR, so reviewers and CI gates judge the final form instead of one that keeps changing.
 
-## Was die Skill tut
+> The pass shortens, deduplicates, and moves code to the right level. It never changes what the code does.
 
-- **Vier Linsen** prüfen den Diff unabhängig voneinander:
-  - **Wiederverwendung** — deckt der Bestand die Stelle schon (Helfer, Muster, Konstante)?
-  - **Vereinfachung** — kürzer/klarer ohne Verhaltensänderung (inkl. tote Parameter)?
-  - **Effizienz** — unnötige Arbeit mit nennenswertem Effekt?
-  - **Flughöhe** — richtige Ebene, wahrheitstreue Kommentare?
-- **Modus nach Aufwand:** ab ~100 geänderten Code-Zeilen oder >2 Dateien Fan-out über parallele, gedächtnislose, read-only Subagenten; darunter inline; ohne Subagenten-Werkzeug Fallback in getrennten Durchgängen.
-- **Harte Grenzen:** verhaltensneutral — Tests, Assertion-Texte und Szenario-Token (Rot-Beweis) bleiben unangetastet; echte Bugs werden gemeldet, nie heimlich mitgefixt; fremder Code wird gemeldet, nie angefasst; nach dem Anwenden laufen Build und betroffene Tests erneut.
+## Why
 
-## Installation (Claude Code)
+Simplify after a gate, and the gate ran on code that no longer exists. Simplify after a review, and the review covered a diff that kept growing. This skill puts the pass in the right place in the sequence: **simplify → verify → review → PR**.
+
+## How it works
+
+Four independent lenses review the diff:
+
+| Lens | Question |
+|---|---|
+| Reuse | Does the codebase already provide the helper, pattern, or constant? |
+| Simplification | Shorter or clearer without behavior change — dead parameters, duplicated comments, lying comments, …? |
+| Efficiency | Unnecessary work with a notable, countable effect? |
+| Altitude | Right layer, comments that tell the truth? |
+
+Mode scales with diff size: **fan-out** over parallel read-only subagents for large diffs (≥ ~100 changed lines or > 2 files), **inline** for small ones, plus a sequential fallback when no subagent tool exists.
+
+Hard boundaries — enforced by the eval suite:
+
+- Tests, assertion texts, and scenario tokens stay **untouched** (a red-proof must not rot).
+- A real bug is **reported**, never silently fixed under the cleanup label.
+- Foreign code outside the diff is **reported**, never touched.
+- After applying, build and affected tests are **re-run green**.
+
+## Install
 
 ```bash
-git clone git@github.com:foued611/simplify-skill.git
+git clone https://github.com/foued611/simplify-skill.git
 mkdir -p ~/.claude/skills
-cp -R simplify-skill ~/.claude/skills/simplify   # SKILL.md ist Pflicht, evals/ optional
+cp -R simplify-skill ~/.claude/skills/simplify
 ```
 
-Danach per „mach einen simplify-Lauf über den Diff" / `/simplify` auslösen. Andere Agenten, die SKILL.md-Dateien lesen, funktionieren genauso.
+Works with any agent that reads `SKILL.md` skill files (Claude Code and friends).
+
+## Usage
+
+Ask for it in natural language: "simplify", "/simplify", "clean up my change before I open the PR", "räum das auf", "vereinfache den Diff". The skill determines the diff (merge-base against the PR target branch), runs the lenses, applies what clears the bar, declines the rest with reasons, and re-verifies.
 
 ## Evals
 
-Drei Fälle unter `evals/`, jeder mit `prompt.md` (User-Anfrage), `case.yaml` (Erwartung), `graders/` (Assertionen) und `fixture.bundle` (Git-Bundle mit `main` + Feature-Branch).
-
-**Abgrenzung:** Die Skill selbst (`SKILL.md`) ist feature-agnostisch — kein Domänen-Inhalt. Alles unter `evals/` sind synthetische Test-Fixtures (erfundene Beispiel-Projekte wie Unit-Test-Daten), die ausschließlich prüfen, ob die Skill ihre Regeln einhält.
-
-Fixture materialisieren und Tests prüfen:
+Each case under `evals/` is standalone and reproducible:
 
 ```bash
 mkdir work && cd work
-bash <repo>/evals/<fall>/place-files.sh     # klont das Bundle, checkt den Feature-Branch aus
-node --test src/*.test.js                   # Basislinie: giftcard 6/0, reminder 3/1 (eingebauter Bug), card-sync 5/0
+bash ../evals/<case>/place-files.sh   # materializes the synthetic repo (feature branch checked out)
+node --test src/*.test.js             # baseline
 ```
 
-Ein Lauf = Agent mit `prompt.md` einmal **mit** SKILL.md und einmal **ohne**; danach die Assertionen aus `graders/` bewerten. `reminder-inline` trägt absichtlich einen Bug (Test erwartet `faellig(25*STD,0)` = true, das Default-Fenster ist 24 h) — prüft, ob der Lauf ihn meldet statt still zu fixen. `card-sync-decline` trägt eine Fallgrube (Re-Query in der Poll-Loop ist Korrektheit wegen eingefrorener Snapshots — Hoisten wäre der Fehler).
+Then have an agent work the `prompt.md` request once **with** the skill and once **without**, and check the assertions in `graders/`. Fixtures are fully synthetic — the domains (gift cards, reminders, card sync) are incidental test data, chosen to look like realistic code.
+
+| Case | Verifies | Baseline |
+|---|---|---|
+| `large-diff-fanout` | Fan-out path on a multi-file diff: helper reuse, dead parameter, duplicated comment, redundant wait, lying header, foreign-code boundary, no test loss | 6/6 green |
+| `small-diff-bug-boundary` | Inline path on a small diff + the critical boundary: an embedded test bug is reported, not silently fixed | 3 pass / 1 fail (intentional) |
+| `decline-discipline` | Declining discipline: the snapshot re-query trap is declined, dead params removed, foreign code only reported | 5/5 green |
 
 ## Benchmark
 
-| Konfiguration | Pass-Rate |
+| Configuration | Pass rate |
 |---|---|
-| Mit Skill | **18/18 (100 %)** |
-| Ohne Skill | 15/18 (84 %) |
+| With skill | **18/18 (100%)** |
+| Without skill | 15/18 (84%) |
 
-Ohne Skill wurden stillschweigend Tests gelöscht bzw. ein Test umgeschrieben, um einen eingebauten Bug grün zu bekommen — genau die Verletzungen, gegen die die Skill schützt. Zwei Iterationen (v2 = token-optimiert, 70 Zeilen Skill-Text, „ein Fund pro Zeile"); Laufzeit-/Token-Messung in der verwendeten Harness nicht verfügbar.
+Without the skill, runs silently deleted a test and rewrote a failing test to hide an embedded bug — exactly the violations this skill exists to prevent. Timing/token metrics were not measurable in the harness used.
+
+## License
+
+[MIT](LICENSE)

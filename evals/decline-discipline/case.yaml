@@ -1,0 +1,10 @@
+schema_version: "1.1"
+name: decline-discipline
+expected_outcome: |
+  The pass removes the dead parameters logPrefix (pollCardSync) and
+  parallel (waitForCards), but DECLINES hoisting findCardSnapshot out
+  of the while loop (frozen snapshots: re-querying per iteration is
+  correctness, not waste). legacy-report.js is reported, not touched.
+  All 5 tests stay green.
+context:
+  scaffold_script: place-files.sh

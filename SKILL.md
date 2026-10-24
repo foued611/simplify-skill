@@ -1,70 +1,70 @@
 ---
 name: simplify
-description: Führt den /simplify-Schritt aus — verhaltensneutrale Vereinfachung eines frisch geschriebenen Diffs (Feature, Bugfix, PR-Branch) VOR Review und Merge. Nutze diese Skill IMMER, wenn der Nutzer „simplify", „/simplify", „räum das auf", „vereinfache den Diff/das PR/den Branch", „clean up my change", „make it simpler before I open the PR" sagt oder nach dem Implementieren vor dem Review eine Aufräum-Passage verlangt. Auch bei „der Code funktioniert, aber gefällt mir nicht" oder „mach den Change review-fertig". NICHT für Bestands-Audits (ganze Codebase, Tech-Debt — dafür gibt es Audit-Skills), nicht für Korrektheits-Reviews (Bugs, Security) und nicht für Refactoring mit gewollter Verhaltensänderung.
+description: Runs the /simplify step — behavior-preserving simplification of a freshly written diff (feature, bugfix, PR branch) BEFORE review and merge. Use this skill WHENEVER the user says "simplify", "/simplify", "clean up my change", "make it simpler before I open the PR", "räum das auf", "vereinfache den Diff/das PR/den Branch" or asks for a cleanup pass after implementing, before the review. Also for "the code works but I don't like it" or "make this change review-ready". NOT for whole-codebase audits (tech debt — use audit skills), not for correctness reviews (bugs, security), not for refactoring with intended behavior change.
 ---
 
-# simplify — diff-gescopete Vereinfachung vor dem Review
+# simplify — diff-scoped cleanup before the review
 
-Vereinfacht einen frisch geschriebenen Diff **vor** Review und Merge, damit Gates und Reviewer die endgültige Form sehen — nicht eine, die sich danach noch ändert. Die Passage ist **verhaltensneutral**: kürzen, entduplizieren, auf die richtige Ebene rücken. Sie ändert nicht, was der Code tut.
+Simplifies a freshly written diff **before** review and merge, so gates and reviewers see the final form — not one that keeps changing afterwards. The pass is **behavior-preserving**: shorten, deduplicate, move code to the right level. It does not change what the code does.
 
-**Nicht im Umfang:** reine Doku-/Config-/Prompt-Änderungen, Umbenennungen ohne Verhaltensbezug, Bestands-Audit, Korrektheits-Review. Ein echter Bug wird gemeldet (oder offen nach den Repo-Regeln behandelt) — nie heimlich unter dem Vereinfachungs-Label gefixt.
+**Out of scope:** pure docs/config/prompt changes, renames without behavioral relevance, whole-codebase audits, correctness reviews. A real bug is reported (or handled openly under the repo rules) — never silently fixed under the simplification label.
 
-## Schritt 0 — Scope und Modus
+## Step 0 — Scope and mode
 
-1. **Diff feststellen:** Base = Ziel-Branch des Changes (aus Branch-Name, PR-Info oder Nachfrage: `origin/dev`, `origin/main` …). Dann `git merge-base <base> HEAD`, `git diff <mb>...HEAD --stat` plus geänderte Dateien mit Zeilenzahl. Commit-Bereich `A..B` geht genauso.
-2. **Verdrahtung erkennen:** Gibt es ein Vertrags-/Manifest-Dokument (Spec, Auftrag)? Tragen Tests Szenario-Token oder Assertion-Texte, die ein Rot-Beweis aus der Git-Historie liest? Diese Texte sind **unantastbar**. Liefen Beweis-/Gate-Läufe bereits, sind sie nach angewandten Änderungen erneut zu fahren und zu dokumentieren.
-3. **Modus:** ab rund 100 geänderten Code-Zeilen oder mehr als zwei Dateien → **Fan-out** (vier Linsen als parallele, gedächtnislose, read-only Subagenten — unabhängige Perspektiven finden mehr als eine gemischte). Darunter → **Inline** (dieselben vier Linsen in einem Durchgang; für einen Mini-Diff vier Agenten zu starten kostet mehr als es bringt).
+1. **Determine the diff:** base = the target branch of the change (from branch name, PR info, or asking: `origin/dev`, `origin/main` …). Then `git merge-base <base> HEAD`, `git diff <mb>...HEAD --stat` plus the changed files with line counts. A commit range `A..B` works the same way.
+2. **Detect repo wiring:** is there a contract/manifest document (spec, task)? Do tests carry scenario tokens or assertion texts that a red-proof reads from git history? Those texts are **untouchable**. If proof/gate runs already happened, they must be re-run and documented after applied changes.
+3. **Mode:** from about 100 changed code lines or more than two files → **fan-out** (four lenses as parallel, memoryless, read-only subagents — independent perspectives find more than one mixed one). Below that → **inline** (the same four lenses in one pass; spinning up four agents for a mini-diff costs more than it returns).
 
-Steht dir kein Subagenten-Werkzeug zur Verfügung: fahre die vier Linsen nacheinander in **getrennten Durchgängen** ab (je Linse Diff neu lesen) — der Fokus-Vorteil bleibt gegenüber einer gemischten Einzelpassage.
+If no subagent tool is available: run the four lenses one after another in **separate passes** (re-read the diff per lens) — the focus advantage over a single mixed pass remains.
 
-## Die vier Linsen
+## The four lenses
 
-| Linse | Frage | Latte — wann ein Fund zählt |
+| Lens | Question | Bar — when a finding counts |
 |---|---|---|
-| **Wiederverwendung** | Deckt der Bestand die Stelle schon (Helfer, Muster, Konstante)? Grep/glob nach ähnlichen Namen. | Austausch verhaltensgleich UND der Bestands-Helfer deckt die Stelle wirklich besser. Abstraktion für genau einen Aufrufer = Anti-Pattern, dann ist Eigenbau richtig. |
-| **Vereinfachung** | Wird der Code kürzer oder klarer, ohne sein Verhalten zu ändern? | Messbarer Gewinn (Zeilen, Klarheit, eine statt zwei Wahrheitsquellen), kein Geschmacksurteil. **Toter Parameter:** kein Aufrufer übergibt einen Nicht-Default-Wert UND kein Test greift auf ihn zu → Entfernung ist verhaltensneutral, kein Feature-Eingriff. Assertion-Texte von Beweis-Tests unberührt lassen. |
-| **Effizienz** | Macht der neue Code unnötige Arbeit? | Nennbarer Effekt mit Zähl- oder Messgröße; „könnte mikroeffizienter sein" ist kein Fund. Achtung Falle: Re-Query in Poll-Loops ist oft Korrektheit (eingefrorene Snapshots) — erst prüfen, dann melden. |
-| **Flughöhe** | Liegt der Code auf der richtigen Ebene, sagen Kommentare die Wahrheit? | Der Bestand entscheidet die Konvention (Literal vs. geteilte Konstante — was macht die Umgebung?). Lügen-Kommentar ist ein Fund. |
+| **Reuse** | Does the codebase already cover the spot (helper, pattern, constant)? Grep/glob for similar names. | The swap is behavior-identical AND the existing helper really covers the spot better. An abstraction for exactly one caller is an anti-pattern — then rolling your own is right. |
+| **Simplification** | Does the code get shorter or clearer without changing behavior? | Measurable gain (lines, clarity, one instead of two sources of truth), no taste judgment. **Dead parameter:** no caller passes a non-default value AND no test touches it → removal is behavior-preserving, not a feature intervention. Leave assertion texts of proof tests untouched. |
+| **Efficiency** | Does the new code do unnecessary work? | Notable effect with a count or a measurement; "could be micro-more-efficient" is not a finding. Careful, trap: re-querying inside a poll loop is often correctness (frozen snapshots) — verify first, then report. |
+| **Altitude** | Is the code at the right level, do comments tell the truth? | The codebase decides the convention (literal vs. shared constant — what does the environment do?). A lying comment is a finding. |
 
-## Rollenvertrag (je Prüfer, Linse einsetzen)
-
-```
-Du bist /simplify-Prüfer, Linse: <LINSE>. RESEARCH ONLY — du änderst keine Dateien.
-Repo: <pfad> (Branch <name>, Base <base>)
-Prüfling: git -C <repo> diff <mb>...HEAD — vollständig lesen, geänderte Dateien im Ganzen.
-Auftrag: <Frage + Latte deiner Linse>
-Regeln:
-- Fund: datei:zeile + konkretes vorher→nachher + Ein-Satz-Begründung der Verhaltensgleichheit.
-- Dateien außerhalb des Diffs nur als „gemeldet" markieren. Kein Fund ohne Latte, keine vagen Bedenken.
-- Antwort: Funde-Liste, ein Fund pro Zeile — oder „keine Funde" plus einen Satz, was geprüft wurde. Kein Vorwort, kein Nachwort.
-```
-
-## Anwenden oder ablehnen
-
-Der Orchestrator (nicht die Prüfer) entscheidet je Fund — ein Fund ist ein Angebot, kein Befehl. **Anwenden**, wenn er die Latte seiner Linse erfüllt und verhaltensneutral bleibt. **Ablehnen mit Begründung** (in den Rapport), wenn der Fund:
-
-- Verhalten, Verträge, Szenario-Token oder Assertion-Texte berührt,
-- eine Abstraktion für genau einen Aufrufer baut,
-- Code außerhalb des eigenen Diffs anfasst (→ stattdessen melden),
-- nur Geschmack ohne messbaren Gewinn ist,
-- eine Sicherheits-Eigenschaft gegen Mikro-Vereinfachung tauscht (typisch: zentrales Budget/Timeout durch per-Stellen-Optionen ersetzen — eine vergessene Stelle fällt lautlos auf einen zu kleinen Default zurück).
-
-## Anwenden und erneut verifizieren
-
-1. Zentral anwenden (eine Runde; Re-Verify rot → gezielt fixen, höchstens zwei Runden, dann offen rapportieren).
-2. Build und betroffene Tests erneut grün fahren — der Lauf ändert Code, früheres Grün ist kein Beleg mehr.
-3. Beweis-/Gate-Läufe (Rot-Beweis, Coverage-Gate, Preflight) erneut fahren und die neue Ausgabe dokumentieren.
-4. Funde in fremdem Code nie mitfixen — sie wandern in den Rapport.
-
-## Rapport-Format
+## Role contract (per reviewer, insert lens)
 
 ```
-## /simplify — <Branch/Diff-Kennung>
-
-Umgesetzt (je: datei:zeile, was, warum verhaltensneutral): …
-Abgelehnt (je: Fund, Grund): …
-Gemeldet, nicht umgesetzt (fremder Code, Folge-Arbeit): …
-Verifikation: <gelaufene Kommandos + Ergebnis>
+You are a /simplify reviewer, lens: <LENS>. RESEARCH ONLY — you change no files.
+Repo: <path> (branch <name>, base <base>)
+Subject: git -C <repo> diff <mb>...HEAD — read it fully, changed files in full.
+Task: <question + bar of your lens>
+Rules:
+- Finding: file:line + a concrete before→after + a one-sentence justification of behavior equivalence.
+- Mark files OUTSIDE the diff as "reported" only. No finding without a bar, no vague concerns.
+- Answer: a findings list, one finding per line — or "no findings" plus one sentence about what you checked. No preamble, no epilogue.
 ```
 
-Rapport in den PR-Body oder als Chat-Zusammenfassung — wie die Umgebung es verlangt.
+## Apply or decline
+
+The orchestrator (not the reviewers) decides per finding — a finding is an offer, not an order. **Apply** if it meets its lens's bar and stays behavior-neutral. **Decline with a reason** (into the report) if the finding:
+
+- touches behavior, contracts, scenario tokens, or assertion texts,
+- builds an abstraction for exactly one caller,
+- touches code outside your own diff (→ report instead),
+- is taste without measurable gain,
+- trades a safety property for micro-simplification (typical: replacing a central budget/timeout with per-call-site options — a missed spot then silently falls back to a too-small default).
+
+## Apply and re-verify
+
+1. Apply centrally (one round; re-verify red → targeted fix, at most two rounds, then report openly).
+2. Re-run the build and affected tests green — the pass changed code, earlier green is no longer evidence.
+3. Re-run proof/gate runs (red proof, coverage gate, preflight) and document the new output.
+4. Never fix findings in foreign code alongside — they go into the report.
+
+## Report format
+
+```
+## /simplify — <branch/diff identifier>
+
+Applied (each: file:line, what, why behavior-neutral): …
+Declined (each: finding, reason): …
+Reported, not applied (foreign code, follow-up work): …
+Verification: <commands run + result>
+```
+
+The report goes into the PR body or as a chat summary — whatever the environment requires.

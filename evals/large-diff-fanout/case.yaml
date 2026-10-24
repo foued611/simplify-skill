@@ -1,0 +1,12 @@
+schema_version: "1.1"
+name: large-diff-fanout
+expected_outcome: |
+  The pass simplifies the large diff via the fan-out path (or the
+  no-subagent fallback): replaces the hand-rolled wait loop with the
+  existing waitUntil helper, removes the dead formatMode parameter,
+  removes the duplicated budget-rationale comment block, fixes the
+  "teh" typo, removes the redundant second waitForCardActivation call,
+  and removes the lying "mirrors api.yaml" header. Tests stay
+  untouched (6 green), legacy-catalog.js is reported, not touched.
+context:
+  scaffold_script: place-files.sh
