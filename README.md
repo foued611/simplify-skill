@@ -30,9 +30,17 @@ Hard boundaries — enforced by the eval suite:
 
 ## Install
 
-The skill folder conforms to the open [Agent Skills standard](https://agentskills.io) (`SKILL.md` plus optional resources), so it works with any skills-compatible agent.
+The skill folder conforms to the open [Agent Skills standard](https://agentskills.io) (`SKILL.md` plus optional resources). Primary targets: **Claude Code** and **OpenCode** — both load `~/.claude/skills/` (OpenCode auto-loads Claude Code skills), so one clone serves both.
 
-**Claude Code (plugin):**
+**Claude Code + OpenCode (one clone, both agents):**
+
+```bash
+git clone https://github.com/foued611/simplify-skill.git ~/.claude/skills/simplify
+# update later (review the SKILL.md diff first — it is code):
+git -C ~/.claude/skills/simplify pull
+```
+
+**Claude Code (plugin marketplace):**
 
 ```bash
 # in Claude Code:
@@ -40,13 +48,13 @@ The skill folder conforms to the open [Agent Skills standard](https://agentskill
 /plugin install simplify@simplify-skill
 ```
 
-**Manual (any agent):**
+**OpenCode (explicit path registration):** add to `~/.config/opencode/opencode.json` — the loader scans the repo for `SKILL.md`:
 
-```bash
-git clone https://github.com/foued611/simplify-skill.git
-mkdir -p ~/.claude/skills
-cp -R simplify-skill ~/.claude/simplify
+```json
+{ "skills": { "paths": ["~/path/to/simplify-skill"] } }
 ```
+
+Restart your agent after installing or updating (running sessions keep the already-loaded config).
 
 ## Usage
 
