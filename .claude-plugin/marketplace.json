@@ -1,0 +1,20 @@
+{
+  "name": "simplify-skill",
+  "owner": {
+    "name": "Foued",
+    "email": "foued@dghaies.de"
+  },
+  "metadata": {
+    "description": "Behavior-preserving diff simplification for coding agents",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "simplify",
+      "description": "Runs a behavior-preserving simplification pass over a freshly written diff before review and PR — four lenses, fan-out or inline, with hard boundaries (tests untouchable, bugs reported not fixed, foreign code untouched) and re-verification.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./"]
+    }
+  ]
+}

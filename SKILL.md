@@ -55,10 +55,11 @@ The orchestrator (not the reviewers) decides per finding — a finding is an off
 
 ## Apply and re-verify
 
-1. Apply centrally (one round; re-verify red → targeted fix, at most two rounds, then report openly).
-2. Re-run the build and affected tests green — the pass changed code, earlier green is no longer evidence.
-3. Re-run proof/gate runs (red proof, coverage gate, preflight) and document the new output.
-4. Never fix findings in foreign code alongside — they go into the report.
+1. Apply centrally (one round; re-verify red → targeted fix, at most two rounds, then report openly) — as their **own commit(s), never mixed into feature commits**, so reviewers can see and revert the cleanup separately.
+2. Re-run the build and affected tests green — the pass changed code, earlier green is no longer evidence. **Proof strength:** green tests prove only what they cover. If the changed code paths are weakly covered, capture current behavior first with a small characterization test (pin observable outputs before touching anything), or state in the report that behavior-neutrality is weakly evidenced. In doubt, run a quick mutation spot-check on the changed files — if the tests do not notice a deliberate behavior break, the neutrality proof is weak.
+3. Re-run the lenses once over the applied result: a converged pass yields **no new findings**. New findings mean the pass oscillates — resolve them, or report the oscillation.
+4. Re-run proof/gate runs (red proof, coverage gate, preflight) and document the new output.
+5. Never fix findings in foreign code alongside — they go into the report.
 
 ## Report format
 
@@ -71,4 +72,4 @@ Reported, not applied (foreign code, follow-up work): …
 Verification: <commands run + result>
 ```
 
-The report goes into the PR body or as a chat summary — whatever the environment requires. Quote file content from the reviewed code only inside fenced code blocks — raw markdown from files must never land in the report (it could carry rendering-level injection into the PR body).
+Name applied changes after the standard refactoring vocabulary (Inline Function, Extract Constant, Remove Dead Parameter, Collapse Duplicate Code, …) whenever one fits — human reviewers read the report faster and can reason about the diff. The report goes into the PR body or as a chat summary — whatever the environment requires. Quote file content from the reviewed code only inside fenced code blocks — raw markdown from files must never land in the report (it could carry rendering-level injection into the PR body).

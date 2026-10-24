@@ -30,13 +30,23 @@ Hard boundaries — enforced by the eval suite:
 
 ## Install
 
+The skill folder conforms to the open [Agent Skills standard](https://agentskills.io) (`SKILL.md` plus optional resources), so it works with any skills-compatible agent.
+
+**Claude Code (plugin):**
+
+```bash
+# in Claude Code:
+/plugin marketplace add foued611/simplify-skill
+/plugin install simplify@simplify-skill
+```
+
+**Manual (any agent):**
+
 ```bash
 git clone https://github.com/foued611/simplify-skill.git
 mkdir -p ~/.claude/skills
-cp -R simplify-skill ~/.claude/skills/simplify
+cp -R simplify-skill ~/.claude/simplify
 ```
-
-Works with any agent that reads `SKILL.md` skill files (Claude Code and friends).
 
 ## Usage
 
