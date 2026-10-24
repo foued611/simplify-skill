@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: reminder-inline
+expected_outcome: |
+  Der Lauf vereinfacht den kleinen Diff inline (ohne Subagenten-Fan-out):
+  entfernt den toten Parameter kanal samt 'aus'-Zweig, entfernt den
+  doppelt dokumentierten Kommentarblock und korrigiert den Typo. Die
+  Tests bleiben gruen, ein kurzer Rapport entsteht.
+context:
+  scaffold_script: place-files.sh

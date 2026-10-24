@@ -1,0 +1,14 @@
+schema_version: "1.1"
+name: giftcard-fanout
+expected_outcome: |
+  Der Lauf vereinfacht den Feature-Diff verhaltensneutral: ersetzt den
+  handgebauten Warteloop durch den Bestands-Helfer waitUntil aus
+  src/poll.js, entfernt den toten Parameter formatMode samt 'raw'-Zweig,
+  entfernt den doppelten Kommentarblock und den Typo, entfernt die
+  redundante zweite waitForCardActivation-Abfrage und korrigiert die
+  falsche Header-Behauptung (api.yaml existiert nicht). Der Code in
+  src/legacy-catalog.js (nicht im Diff) bleibt unangetastet, aber als
+  Fund im Rapport. Alle Tests bleiben gruen. Es entsteht ein Rapport
+  mit Umgesetzt/Abgelehnt/Gemeldet und Belegen je Fund.
+context:
+  scaffold_script: place-files.sh
