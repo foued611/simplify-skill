@@ -12,7 +12,7 @@ Before touching the code, pin its observable outputs (return values, emitted cal
 
 Shows whether the tests notice a deliberate break. Never in the user's working tree.
 
-1. Copy the current state, untracked files included: `tree=$(fp)` (`references/fan-out.md`); `tmp=$(mktemp -d)`; `git worktree add --detach "$tmp" HEAD`; `git -C "$tmp" checkout "$tree" -- .`.
+1. Copy the current state, untracked files and deletions included: `tree=$(fp)` (`references/fan-out.md`); `tmp=$(mktemp -d)`; `git worktree add --detach "$tmp" HEAD`; `git -C "$tmp" checkout --no-overlay "$tree" -- .` (git ≥ 2.22; plain overlay checkout would keep files the change deleted).
 2. Break one changed line on purpose (flip a condition, drop a call).
 3. Run only the affected tests in `"$tmp"`.
 4. `git worktree remove --force "$tmp"`.
