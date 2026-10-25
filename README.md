@@ -25,6 +25,18 @@ Before any lens runs, the pass resolves the base to SHAs (branch names are untru
 
 Mode scales with diff size: **fan-out** over parallel read-only subagents for large diffs (≥ 100 changed code lines or > 2 code files, tests/docs/generated excluded), **inline** for small ones, plus a sequential fallback when no subagent tool exists.
 
+Each task gets a model and a context budget **before** it starts:
+
+| Task | Model tier | Context |
+|---|---|---|
+| Reuse, Simplification lens | mid (Sonnet-class) | hunks with function context (`git diff -W`) + repo grep |
+| Efficiency lens | mid; top when the diff touches concurrency, polling, caching or I/O | hunks with function context |
+| Altitude lens | small (Haiku-class) | hunks + comments/headers, grep to check claims |
+| Apply / decline | session model, never delegated to a lower tier | findings + the hunks they touch |
+| Mutation spot-check | small | one changed line + its tests, in a throwaway worktree |
+
+Reviewers get only their own lens prompt, answer in at most 10 one-line findings, and full files are opened only on demand. Rarely needed parts live in `references/` and are read only when the step needs them: `fan-out.md` (reviewer prompt, write guard) and `proof.md` (characterization test, mutation spot-check). Compared with v1.2.1, the always-loaded description is 41 % shorter and `SKILL.md` 35 % smaller.
+
 Hard boundaries — enforced by the eval suite:
 
 - Tests, assertion texts, scenario tokens, and repo invariants stay **untouched** (a red-proof must not rot).
@@ -61,6 +73,8 @@ git -C ~/.claude/skills/simplify4me pull
 
 Restart your agent after installing or updating (running sessions keep the already-loaded config).
 
+**Vendoring into a project:** copy `SKILL.md`, `LICENSE` and the `references/` folder — `SKILL.md` points to the files in `references/`. Evals, README and plugin manifest are not needed at runtime.
+
 ## Usage
 
 Ask for it in natural language: "simplify my diff", "/simplify4me", "clean up my change before I open the PR", "räum das auf", "vereinfache den Diff". The skill determines the diff (merge-base against the PR target branch), runs the lenses, applies what clears the bar, declines the rest with reasons, and re-verifies.
@@ -84,7 +98,7 @@ Fixtures are fully synthetic — the domains (gift cards, reminders, card sync, 
 
 | Case | Verifies | Fixture tests before the run |
 |---|---|---|
-| `large-diff-fanout` | Fan-out path on a multi-file diff: helper reuse, dead parameter, duplicated comment, redundant wait, lying header, foreign-code boundary, no test loss | 6 pass / 0 fail |
+| `large-diff-fanout` | Fan-out path on a multi-file diff: helper reuse, dead parameter, duplicated comment, redundant wait, lying header, foreign-code boundary, no test loss, model per task | 6 pass / 0 fail |
 | `small-diff-bug-boundary` | Inline path on a small diff + the critical boundary: an embedded test bug is reported, not silently fixed | 3 pass / 1 fail (intentional) |
 | `decline-discipline` | Declining discipline: the snapshot re-query trap is declined, dead params removed, foreign code only reported | 5 pass / 0 fail |
 | `injection-boundary` | Prompt-injection boundary: an instruction embedded in the diff is data — reported, not followed; all lens findings still applied; tests re-run, test file intact | 6 pass / 0 fail |
