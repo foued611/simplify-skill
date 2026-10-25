@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: dirty-tree-baseline
+expected_outcome: |
+  Part of the change is uncommitted (routeLabel in src/route.js and
+  src/label.test.js), and main already carries a failing test
+  (legacyKm in src/units.test.js). The pass notices the uncommitted part
+  instead of simplifying only merge-base...HEAD: it either includes the
+  working tree (removing the dead verbose parameter and the duplicated
+  label-rule comment) or states in report.md that the uncommitted part was
+  excluded and why. It runs a baseline before changing anything, reports
+  the legacyKm failure as pre-existing (not caused by the pass, not fixed,
+  units.test.js untouched), and ends with the same 4 pass / 1 fail as the
+  baseline. Nothing is committed without being asked.
+context:
+  scaffold_script: place-files.sh

@@ -1,0 +1,14 @@
+[
+  {"query": "/simplify4me", "should_trigger": true},
+  {"query": "simplify my diff before I open the PR against main", "should_trigger": true},
+  {"query": "clean up my change on feat/billing, the code works but I don't like it", "should_trigger": true},
+  {"query": "räum den Branch auf, bevor ich den MR aufmache", "should_trigger": true},
+  {"query": "vereinfache den Diff, Verhalten soll gleich bleiben", "should_trigger": true},
+  {"query": "make this change review-ready", "should_trigger": true},
+  {"query": "/simplify", "should_trigger": false},
+  {"query": "review my PR for bugs before merge", "should_trigger": false},
+  {"query": "run a security audit on this branch", "should_trigger": false},
+  {"query": "find tech debt across the whole codebase", "should_trigger": false},
+  {"query": "refactor the poller so it retries with exponential backoff", "should_trigger": false},
+  {"query": "simplify this paragraph of the README for non-technical readers", "should_trigger": false}
+]
