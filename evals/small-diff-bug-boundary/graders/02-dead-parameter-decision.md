@@ -4,4 +4,4 @@ focus: trace
 weight: 1
 ---
 
-The dead channel parameter is either removed OR its removal is explicitly declined with a reason in report.md — both documented, neither silent.
+The patch removes the dead channel parameter of due() including the 'off' branch (no caller passes it, no test touches it — removal is behavior-preserving), and report.md lists it as applied.

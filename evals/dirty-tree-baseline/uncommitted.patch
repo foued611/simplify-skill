@@ -1,0 +1,32 @@
+diff --git a/src/label.test.js b/src/label.test.js
+new file mode 100644
+index 0000000..74f608f
+--- /dev/null
++++ b/src/label.test.js
+@@ -0,0 +1,7 @@
++import { test } from 'node:test'
++import assert from 'node:assert/strict'
++import { routeLabel } from './route.js'
++
++test('routeLabel shows kilometers with one decimal', () => {
++  assert.equal(routeLabel([1500, 1000]), 'Route: 2.5 km')
++})
+diff --git a/src/route.js b/src/route.js
+index 3e5d57c..9643c31 100644
+--- a/src/route.js
++++ b/src/route.js
+@@ -10,3 +10,14 @@ export function routeLength(segments) {
+ export function routeKm(segments) {
+   return toKm(routeLength(segments))
+ }
++
++// label-rule: the label always shows kilometers with one decimal so the
++// summary reads the same on every screen.
++export function routeLabel(segments, verbose = false) {
++  const km = routeKm(segments).toFixed(1)
++  if (verbose) return `Route: ${km} km (${segments.length} segments)`
++  return `Route: ${km} km`
++}
++
++// label-rule: the label always shows kilometers with one decimal so the
++// summary reads the same on every screen.
