@@ -110,6 +110,10 @@ v1.2.0 adds `check.sh`, two cases, and tightened graders; it has not been benchm
 - **Evals execute generated code.** Agents under test write and run Node code, and fixtures come from git bundles that pull requests can modify. Run evals in a sandbox (container or VM) and review any diff touching `evals/` before you pull it. `place-files.sh` refuses a non-empty directory so it cannot overwrite an existing repo's `.git`.
 - **`SKILL.md` is code.** This whole repository is instructions that run inside your agent sessions. Review changes to `SKILL.md` like code before updating, and pin a release tag when you consume the skill from automation.
 
+### Known limitations
+
+- **`markdown_safe` misses reference-style links.** The deterministic check behind the "no raw repo markdown in the report" guarantee matches inline links/images, autolinks and raw HTML, but not `[text][ref]` together with its `[ref]: <url>` definition — those still render as live links in a PR body. For this form the LLM grader is the only net, so the check is fail-open until fixed. Tracked in [#2](https://github.com/foued611/simplify4me/issues/2).
+
 ## License
 
 [MIT](LICENSE)
