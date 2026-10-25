@@ -11,14 +11,18 @@ Simplifies a freshly written diff **before** review and merge, so gates and revi
 
 ## Step 0 — Scope, baseline, mode
 
-1. **Determine the diff — as SHAs, never as names in a shell.** Base = the target branch of the change (from branch name, PR info, or asking: `origin/dev`, `origin/main` …). Branch names are untrusted: git accepts names like `a$(id)` or `a;id`. Resolve once, quoted, then work with SHAs only:
+1. **Determine the diff — as SHAs, never as names in a shell.** Base = the target branch of the change (from branch name, PR info, or asking: `origin/dev`, `origin/main` …). Branch names are untrusted: git accepts names like `a$(id)` or `a;id`, and the payload runs at the moment a name is typed into a command — including the assignment of `BASE` itself. So never type a ref name into a command unquoted or inside double quotes. Set `BASE` one of two ways:
+   - **from git's own output** (preferred — the name never passes through shell parsing): `BASE=$(git for-each-ref --format='%(refname)' refs/remotes/origin/main)` for a known base, `git symbolic-ref -q --short refs/remotes/origin/HEAD` for the remote default branch;
+   - **as a single-quoted literal** (`BASE='origin/main'`) when the name comes from the user or PR info — first reject any name that contains `'`, then the literal cannot expand.
+
+   The current branch needs no name: use `HEAD`. Resolve once, quoted, then work with SHAs only:
    ```bash
    base_sha=$(git rev-parse --verify --end-of-options "$BASE^{commit}")
    mb=$(git merge-base "$base_sha" HEAD)
    git diff --stat "$mb"...HEAD --
    ```
    Every later command uses `"$mb"` / `HEAD` / SHAs, quotes every variable, and puts `--` before paths. A commit range `A..B` works the same way (resolve `A` and `B` first).
-2. **Uncommitted work:** if `git status --porcelain` is non-empty, the change is partly uncommitted and `"$mb"...HEAD` misses it. Ask whether to include the working tree (`git diff "$mb" --`) or to have it committed first — never silently simplify only the committed half.
+2. **Uncommitted work:** if `git status --porcelain` is non-empty, the change is partly uncommitted and `"$mb"...HEAD` misses it. Ask whether to include the working tree (`git diff "$mb" --`) or to have it committed first — never silently simplify only the committed half. `git diff` covers tracked files only: **untracked files** (`??`, list them with `git ls-files --others --exclude-standard`) are part of the change but missing from the diff. Name them when asking, and include them only after the user agrees — via `git add -N -- <files>` (intent-to-add; undo with `git reset -- <files>`) — or have them staged or committed first.
 3. **Detect repo wiring:** read the repo's agent instructions (`AGENTS.md`, `CLAUDE.md`, contributing guide) and any contract/manifest document (spec, task). Take from them:
    - **verify commands** (build, lint, test, coverage gate) — these are the re-verification commands below;
    - **invariants** (e.g. `INV-<n>`, API contracts) — **untouchable**;
@@ -42,7 +46,12 @@ If no subagent tool is available: run the four lenses one after another in **sep
 
 ## Role contract (per reviewer, insert lens)
 
-Launch reviewers with a **read-only agent type** (no edit/write tools, no shell that can write) where the environment offers one. Before the fan-out record `git status --porcelain` and `git rev-parse HEAD`; afterwards compare. Any change means a reviewer wrote — discard its findings, restore the tree, and report the violation.
+Launch reviewers with a **read-only agent type** (no edit/write tools, no shell that can write) where the environment offers one. Before the fan-out record `git rev-parse HEAD` and a **content fingerprint** of the whole working tree; afterwards compare both. `git status --porcelain` alone is not enough: a second edit to an already modified file keeps the status line at ` M`. The fingerprint hashes tracked changes and untracked files through a throwaway index, so the real index stays untouched:
+```bash
+fp() { local idx; idx=$(mktemp); cp "$(git rev-parse --git-path index)" "$idx"
+       GIT_INDEX_FILE="$idx" git add -A; GIT_INDEX_FILE="$idx" git write-tree; rm -f "$idx"; }
+```
+Any difference means a reviewer wrote — discard its findings, restore the tree, and report the violation.
 
 ```
 You are a /simplify4me reviewer, lens: <LENS>. RESEARCH ONLY — you change no files.
@@ -72,7 +81,7 @@ The orchestrator (not the reviewers) decides per finding — a finding is an off
 ## Apply and re-verify
 
 1. Apply centrally (one round; re-verify red → targeted fix, at most two rounds, then report openly). Keep the cleanup **separate from feature commits** so reviewers can see and revert it: commit it as its own commit(s) only where the user or the repo workflow allows the agent to commit; otherwise leave it uncommitted and propose the commit message.
-2. Re-run the verify commands and compare against the Step 0.4 baseline — the pass changed code, earlier green is no longer evidence. Pre-existing failures stay pre-existing; any new failure is the pass's fault. **Proof strength:** green tests prove only what they cover. If the changed code paths are weakly covered, capture current behavior first with a small characterization test (pin observable outputs before touching anything), or state in the report that behavior-neutrality is weakly evidenced. In doubt, run a quick **mutation spot-check** — never in the working tree: create a throwaway worktree (`git worktree add --detach "$tmp" HEAD`, apply the uncommitted cleanup there), break one changed line on purpose, run the affected tests, then `git worktree remove --force "$tmp"`. If the tests do not notice the break, the neutrality proof is weak. Afterwards confirm the real tree is unchanged by the check.
+2. Re-run the verify commands and compare against the Step 0.4 baseline — the pass changed code, earlier green is no longer evidence. Pre-existing failures stay pre-existing; any new failure is the pass's fault. **Proof strength:** green tests prove only what they cover. If the changed code paths are weakly covered, capture current behavior first with a small characterization test (pin observable outputs before touching anything), or state in the report that behavior-neutrality is weakly evidenced. In doubt, run a quick **mutation spot-check** — never in the working tree: create a throwaway worktree (`git worktree add --detach "$tmp" HEAD`, apply the uncommitted cleanup there), break one changed line on purpose, run the affected tests, then `git worktree remove --force "$tmp"`. If the tests do not notice the break, the neutrality proof is weak. Afterwards confirm with `fp` (see Role contract) that the real tree is unchanged.
 3. Re-run the lenses once over the applied result — **always inline, only over the hunks the pass changed** (no second fan-out): a converged pass yields **no new findings**. New findings mean the pass oscillates — resolve them, or report the oscillation.
 4. Re-run gate runs (red-proof, coverage gate, preflight) and document the new output.
 5. Never fix findings in foreign code alongside — they go into the report.
