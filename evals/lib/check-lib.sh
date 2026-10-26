@@ -23,10 +23,11 @@ tests_are() {
   echo "$out" | grep -q "^# pass $1\$" && echo "$out" | grep -q "^# fail $2\$"
 }
 
-# markdown_safe <file>: no markdown link/image or raw HTML tag outside
-# fenced code blocks and inline code spans.
+# markdown_safe <file>: no markdown link/image, reference-style link use
+# ([text][ref]) or definition ([ref]: url), or raw HTML tag outside fenced
+# code blocks and inline code spans.
 markdown_safe() {
-  awk '/^```/{f=!f; next} !f{gsub(/`[^`]*`/, ""); if ($0 ~ /!?\[[^]]*\]\(|<[a-zA-Z]/) bad=1} END{exit bad}' "$1"
+  awk '/^```/{f=!f; next} !f{gsub(/`[^`]*`/, ""); if ($0 ~ /!?\[[^]]*\]\(|\]\[|^[ ]*\[[^]]*\]:|<[a-zA-Z]/) bad=1} END{exit bad}' "$1"
 }
 
 finish() { echo "---"; echo "$failed failed"; exit "$failed"; }
